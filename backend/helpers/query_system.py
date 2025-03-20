@@ -1,140 +1,45 @@
 import json
 import re
 from collections import defaultdict
-
+import math
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
 
 class EthicalInvestmentQuerySystem:
-    def __init__(self):
-
+    def __init__(self, stocks_data):
+        
+        # Map possible terms in queries to the corresponding ESG factors
         self.field_mappings = {
-            "environmental": [
-                "environmentScore",
-                "environment",
-                "eco",
-                "green",
-                "sustainable",
-                "carbon",
-                "climate",
-            ],
-            "social": [
-                "socialScore",
-                "society",
-                "community",
-                "people",
-                "ethical",
-                "human rights",
-                "social responsibility",
-            ],
-            "governance": [
-                "governanceScore",
-                "management",
-                "leadership",
-                "board",
-                "transparency",
-                "corporate governance",
-            ],
-            "esg": [
-                "totalEsg",
-                "sustainability",
-                "responsible",
-                "ethical investing",
-                "sustainable investing",
-            ],
-            "risk": [
-                "overallRisk",
-                "risky",
-                "danger",
-                "safe",
-                "safety",
-                "volatility",
-                "stability",
-            ],
-            "controversy": [
-                "highestControversy",
-                "controversial",
-                "scandal",
-                "dispute",
-                "issue",
-                "problems",
-            ],
-            "market cap": [
-                "marketCap",
-                "size",
-                "capitalization",
-                "market value",
-                "company size",
-                "large cap",
-                "small cap",
-            ],
-            "beta": [
-                "beta",
-                "volatility",
-                "stable",
-                "stability",
-                "market risk",
-                "market sensitivity",
-            ],
-            "percentile": [
-                "percentile",
-                "rank",
-                "standing",
-                "position",
-                "rating",
-                "relative performance",
-            ],
+            "environmental": ["environmentScore", "environment", "eco", "green", "sustainable", "carbon", "climate"],
+            "social": ["socialScore", "society", "community", "people", "ethical", "human rights", "social responsibility"],
+            "governance": ["governanceScore", "management", "leadership", "board", "transparency", "corporate governance"],
+            "esg": ["totalEsg", "sustainability", "responsible", "ethical investing", "sustainable investing"],
+            "risk": ["overallRisk", "risky", "danger", "safe", "safety", "volatility", "stability"],
+            "controversy": ["highestControversy", "controversial", "scandal", "dispute", "issue", "problems"],
+            "market cap": ["marketCap", "size", "capitalization", "market value", "company size", "large cap", "small cap"],
+            "beta": ["beta", "volatility", "stable", "stability", "market risk", "market sensitivity"],
+            "percentile": ["percentile", "rank", "standing", "position", "rating", "relative performance"],
             "sector": ["GICS Sector", "industry", "field", "domain", "market segment"],
         }
-
         self.reverse_mappings = {}
         for key, values in self.field_mappings.items():
             for value in values:
                 self.reverse_mappings[value] = key
 
-        self.modifiers = {
-            "high": [
-                "high",
-                "good",
-                "strong",
-                "great",
-                "impressive",
-                "positive",
-                "large",
-                "big",
-                "higher",
-                "better",
-            ],
-            "low": [
-                "low",
-                "bad",
-                "weak",
-                "poor",
-                "negative",
-                "minimal",
-                "small",
-                "lower",
-                "worse",
-            ],
-        }
-
+        # Define modifiers for positive and negative terms
+        self.modifiers = {"high": ["high", "good", "strong", "great", "impressive", "positive", "large", "big", "higher", "better"], 
+                          "low": ["low", "bad", "weak", "poor", "negative", "minimal", "small", "lower", "worse"]}
         self.reverse_modifiers = {}
         for key, values in self.modifiers.items():
             for value in values:
                 self.reverse_modifiers[value] = 1.0 if key == "high" else -1.0
 
-        self.intensifiers = {
-            "very": 1.5,
-            "extremely": 2.0,
-            "highly": 1.7,
-            "incredibly": 1.8,
-            "somewhat": 0.7,
-            "slightly": 0.5,
-            "a bit": 0.6,
-            "a lot": 1.6,
-            "tremendously": 1.9,
-            "exceptionally": 1.8,
-            "moderately": 0.8,
-        }
+        # Define intensifiers for increasing or decreasing importance
+        self.intensifiers = {"very": 1.5, "extremely": 2.0, "highly": 1.7, "incredibly": 1.8, "somewhat": 0.7, "slightly": 0.5, "a bit": 0.6, "a lot": 1.6, "tremendously": 1.9, "exceptionally": 1.8, "moderately": 0.8}
 
+        # Define negations to invert the meaning of terms
         self.negations = ["not", "no", "never", "neither", "nor", "barely", "hardly"]
 
         self.sectors = [
@@ -151,101 +56,34 @@ class EthicalInvestmentQuerySystem:
             "materials",
         ]
 
-        self.stopwords = set(
-            [
-                "a",
-                "an",
-                "the",
-                "and",
-                "or",
-                "but",
-                "if",
-                "because",
-                "as",
-                "what",
-                "when",
-                "where",
-                "how",
-                "all",
-                "any",
-                "both",
-                "each",
-                "few",
-                "more",
-                "most",
-                "some",
-                "such",
-                "than",
-                "too",
-                "with",
-                "for",
-                "to",
-                "in",
-                "on",
-                "by",
-                "at",
-                "that",
-                "this",
-                "these",
-                "those",
-                "i",
-                "me",
-                "my",
-                "myself",
-                "we",
-                "our",
-                "ours",
-                "ourselves",
-                "you",
-                "your",
-                "yours",
-                "yourself",
-                "yourselves",
-                "he",
-                "him",
-                "his",
-                "himself",
-                "she",
-                "her",
-                "hers",
-                "herself",
-                "it",
-                "its",
-                "itself",
-                "they",
-                "them",
-                "their",
-                "theirs",
-                "themselves",
-                "what",
-                "which",
-                "who",
-                "whom",
-                "whose",
-                "which",
-                "when",
-                "want",
-                "looking",
-                "need",
-                "show",
-                "find",
-                "get",
-                "have",
-                "stocks",
-                "companies",
-                "stock",
-                "company",
-                "invest",
-                "investment",
-                "investing",
-            ]
-        )
+        self.normalize_stock_data = self.normalize_stock_data(stocks_data)
+
+        # Load stopwords for filtering out common words
+        try:
+            self.stopwords = set(stopwords.words('english'))
+        except LookupError:
+            nltk.download('stopwords')
+            self.stopwords = set(stopwords.words('english'))
+
+        # Load tokenizer
+        try:
+            self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+        except LookupError:
+            nltk.download('punkt_tab')
+            self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+
+        # Load stemmer
+        try:
+            self.stemmer = PorterStemmer()
+        except LookupError:
+            nltk.download('punkt_tab')
+            self.stemmer = PorterStemmer()
 
     def tokenize(self, text):
         """Simple tokenization by splitting on spaces and removing punctuation"""
-
+        # TODO 1: destroys phrases like carbon-neutral
+        # return nltk.word_tokenize(text)
         text = text.lower()
-
         text = re.sub(r"\s+", " ", text)
 
         for multi_word in ["a bit", "a lot"]:
@@ -264,22 +102,19 @@ class EthicalInvestmentQuerySystem:
         Parse a natural language query and convert it to a weighted vector
         representing the importance of different factors
         """
-
         tokens = self.tokenize(query_text)
-
         query_vector = defaultdict(float)
-
         negation_active = False
-
         window_size = 4
-
         specified_sectors = []
+
+        # Should do a hard filter
         for token in tokens:
+            # TODO 2: Improve synonym mapping + fuzzy matching, misses variants (tech =/= info tech)
             if token in self.sectors:
                 specified_sectors.append(token)
 
         for i in range(len(tokens)):
-
             if tokens[i] in self.negations:
                 negation_active = True
                 continue
@@ -291,6 +126,7 @@ class EthicalInvestmentQuerySystem:
             ):
                 continue
 
+            # Get the field match in field_mappings
             field_match = None
             for field_key, synonyms in self.field_mappings.items():
                 if tokens[i] in synonyms or tokens[i] == field_key:
@@ -298,29 +134,25 @@ class EthicalInvestmentQuerySystem:
                     break
 
             if field_match:
-
+                # Get the dimension of vector 
                 field_value = self.field_mappings[field_match][0]
 
                 modifier_value = 0.0
                 intensifier_value = 1.0
 
                 for j in range(max(0, i - window_size), i):
-
+                    # Update intensifier and modifiers values 
                     if tokens[j] in self.intensifiers:
                         intensifier_value *= self.intensifiers[tokens[j]]
-
                     if tokens[j] in self.reverse_modifiers:
                         modifier_value = self.reverse_modifiers[tokens[j]]
 
                 if modifier_value == 0.0:
-
                     if field_match in ["environmental", "social", "governance", "esg"]:
                         modifier_value = 1.0
-
                     elif field_match in ["risk", "controversy", "beta"]:
                         modifier_value = -1.0
                     else:
-
                         modifier_value = 1.0
 
                 if negation_active:
@@ -339,17 +171,8 @@ class EthicalInvestmentQuerySystem:
         Normalize stock data to make features comparable
         """
 
-        features = [
-            "environmentScore",
-            "socialScore",
-            "governanceScore",
-            "totalEsg",
-            "highestControversy",
-            "overallRisk",
-            "beta",
-            "marketCap",
-            "percentile",
-        ]
+        features = ["environmentScore", "socialScore", "governanceScore", "totalEsg", 
+                    "overallRisk", "highestControversy", "marketCap", "beta", "percentile"]
 
         feature_arrays = {}
         for feature in features:
@@ -391,6 +214,17 @@ class EthicalInvestmentQuerySystem:
 
         return normalized_data
 
+    def cosine_similarity(self, stock, query_vector):
+        query_magnitude = math.sqrt(sum(w**2 for w in query_vector.values()))
+        stock_vector = [stock[field] for field in query_vector]
+        stock_magnitude = math.sqrt(sum(v**2 for v in stock_vector))
+        
+        if query_magnitude == 0 or stock_magnitude == 0:
+            return 0
+            
+        dot_product = sum(w * stock[field] for field, w in query_vector.items())
+        return dot_product / (query_magnitude * stock_magnitude)
+
     def calculate_similarity(self, stock, query_vector):
         """
         Calculate the similarity score between a stock and the query vector
@@ -422,11 +256,10 @@ class EthicalInvestmentQuerySystem:
 
         query_vector = self.parse_query(query_text)
 
-        normalized_data = self.normalize_stock_data(stocks_data)
-
         scores = []
-        for stock in normalized_data:
+        for stock in self.normalized_data:
             score = self.calculate_similarity(stock, query_vector)
+            # score = self.cosine_similarity(stock, query_vector)
             if score > 0:
                 scores.append(
                     {
@@ -455,22 +288,15 @@ def parse_json_file(file_path):
 
 def load_stock_data(json_text):
     """Parse JSON text into a list of stock objects"""
-
     cleaned_json = json_text.strip()
-
     if cleaned_json.startswith("{"):
-
         cleaned_json = "[" + cleaned_json
     elif not cleaned_json.startswith("["):
-
         cleaned_json = "[" + cleaned_json
-
     if not cleaned_json.endswith("]"):
         cleaned_json = cleaned_json + "]"
-
     cleaned_json = re.sub(r",\s*}", "}", cleaned_json)
     cleaned_json = re.sub(r",\s*]", "]", cleaned_json)
-
     try:
         return json.loads(cleaned_json)
     except json.JSONDecodeError as e:
