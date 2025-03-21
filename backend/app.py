@@ -2,7 +2,7 @@ import json
 import os
 from flask import Flask, render_template, request
 from flask_cors import CORS
-from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
+# from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
 import pandas as pd
 from backend.helpers.query_system import EthicalInvestmentQuerySystem, load_stock_data
 
