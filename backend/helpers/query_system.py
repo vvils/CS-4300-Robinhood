@@ -4,8 +4,8 @@ from collections import defaultdict
 import math
 import nltk
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
+# from nltk.tokenize import word_tokenize
+# from nltk.stem import PorterStemmer
 
 class EthicalInvestmentQuerySystem:
     def __init__(self, stocks_data):
@@ -65,19 +65,19 @@ class EthicalInvestmentQuerySystem:
             nltk.download('stopwords')
             self.stopwords = set(stopwords.words('english'))
 
-        # Load tokenizer
-        try:
-            self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
-        except LookupError:
-            nltk.download('punkt_tab')
-            self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+        # # Load tokenizer
+        # try:
+        #     self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
+        # except LookupError:
+        #     nltk.download('punkt_tab')
+        #     self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
-        # Load stemmer
-        try:
-            self.stemmer = PorterStemmer()
-        except LookupError:
-            nltk.download('punkt_tab')
-            self.stemmer = PorterStemmer()
+        # # Load stemmer
+        # try:
+        #     self.stemmer = PorterStemmer()
+        # except LookupError:
+        #     nltk.download('punkt_tab')
+        #     self.stemmer = PorterStemmer()
 
     def tokenize(self, text):
         """Simple tokenization by splitting on spaces and removing punctuation"""
