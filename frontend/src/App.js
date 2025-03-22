@@ -5,45 +5,36 @@ import TextInput from "./components/TextInput";
 import ResultCard from "./components/ResultCard";
 
 const App = () => {
-  const [value, setValue] = useState(50);
-  const [query, setQuery] = useState("");
-  
-  // Hardcoded result data for demonstration, matching the format you described
-  const results = [
-    {
-      symbol: "TSLA",
-      name: "Tesla",
-      score: 92,
-      sector: "Technology",
-      environmentScore: 92,
-      socialScore: 80,
-      governanceScore: 85,
-      totalEsg: 90,
-      overallRisk: 1.8
-    },
-    {
-      symbol: "NEE",
-      name: "NextEra Energy",
-      score: 89,
-      sector: "Energy",
-      environmentScore: 89,
-      socialScore: 75,
-      governanceScore: 80,
-      totalEsg: 88,
-      overallRisk: 1.2
-    },
-    {
-      symbol: "XOM",
-      name: "ExxonMobil",
-      score: 42,
-      sector: "Energy",
-      environmentScore: 42,
-      socialScore: 50,
-      governanceScore: 55,
-      totalEsg: 45,
-      overallRisk: 1.5
+  const [value, setValue] = useState(50);  
+  const [query, setQuery] = useState("");  
+  const [results, setResults] = useState([]); 
+
+  const fetchResults = async () => {
+    if (query.trim() === "") return;
+
+    console.log("Fetching results for query:", query);
+
+    try {
+      const response = await fetch(`http://localhost:5000/query?query=${query}`);
+      console.log("Response received:", response);
+
+      if (!response.ok) {
+        console.error("Error with the API response:", response.statusText);
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Data from backend:", data);
+
+      if (Array.isArray(data)) {
+        setResults(data);  
+      } else {
+        console.error("Unexpected response format:", data);
+      }
+    } catch (error) {
+      console.error("Error during fetch:", error);
     }
-  ];
+  };
 
   return (
     <Container>
@@ -55,20 +46,26 @@ const App = () => {
       <SliderInput value={value} setValue={setValue} />
 
       <Box sx={{ textAlign: "center", margin: "20px 0" }}>
-        <Button variant="contained" onClick={() => console.log("Search clicked")}>
+        <Button variant="contained" onClick={fetchResults}>
           Search
         </Button>
       </Box>
 
       <Grid container spacing={2} justifyContent="center">
-        {results.map((result, index) => (
-          <Grid item key={index}>
-            <ResultCard result={result} />
-          </Grid>
-        ))}
+        <Typography variant="h6">Results count: {results.length}</Typography>
+        {results.length > 0 ? (
+          results.map((result, index) => (
+            <Grid item key={index}>
+              <ResultCard result={result} />
+            </Grid>
+          ))
+        ) : (
+          <Typography>No results found.</Typography>
+        )}
       </Grid>
     </Container>
   );
 };
 
 export default App;
+
