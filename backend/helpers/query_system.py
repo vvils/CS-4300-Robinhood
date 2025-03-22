@@ -56,7 +56,7 @@ class EthicalInvestmentQuerySystem:
             "materials",
         ]
 
-        self.normalize_stock_data = self.normalize_stock_data(stocks_data)
+        self.normalized_data = self.normalize_stock_data(stocks_data)
 
         # Load stopwords for filtering out common words
         try:

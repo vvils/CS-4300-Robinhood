@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 # from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
 import pandas as pd
@@ -29,8 +29,8 @@ CORS(app)
 @app.route('/query', methods=['GET'])
 def query_endpoint():
     user_query = request.args.get('query', default='', type=str)
-    results = query_system.rank_stocks(stocks_data, user_query)
-    return Flask.jsonify(results)
+    results = query_system.rank_stocks(stocks_data, user_query)[:10]
+    return jsonify(results)
 
 @app.route("/")
 def home():

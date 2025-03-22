@@ -17,42 +17,64 @@
             </div>
             <div class="input-box" onclick="sendFocus()">
                 <img src="{{ url_for('static', filename='images/mag.png') }}" />
-                <input placeholder="Search for a Keeping up the Kardashians episode" id="filter-text-val"
-                    onkeyup="filterText()">
+                <input placeholder="Search for stocks by ESG criteria" id="filter-text-val" onkeyup="filterText()">
             </div>
         </div>
-        <div id="answer-box">
-
-        </div>
+        <div id="answer-box"></div>
     </div>
 
     <script>
-
-        function answerBoxTemplate(title, titleDesc, rating) {
-            return `<div class=''>
-                <h3 class='episode-title'>${title}</h3>
-                <p class='episode-desc'>${titleDesc}</p>
-                <p class='episode-rating'>IMDB Rating: ${rating}</p>
-            </div>`
+        // Template for displaying each result with additional details.
+        function answerBoxTemplate(name, symbol, score, sector, environmentScore, socialScore, governanceScore, totalEsg, overallRisk) {
+            return `
+                <div class="result">
+                    <h3>${name} (${symbol})</h3>
+                    <p>Score: ${score.toFixed(3)}</p>
+                    <p>Sector: ${sector}</p>
+                    <p>Environment Score: ${environmentScore.toFixed(2)}</p>
+                    <p>Social Score: ${socialScore.toFixed(2)}</p>
+                    <p>Governance Score: ${governanceScore.toFixed(2)}</p>
+                    <p>Total ESG: ${totalEsg.toFixed(2)}</p>
+                    <p>Overall Risk: ${overallRisk}</p>
+                </div>
+            `;
         }
 
+        // Set focus to the input when the input box is clicked.
         function sendFocus() {
-            document.getElementById('filter-text-val').focus()
+            document.getElementById('filter-text-val').focus();
         }
 
+        // Send the query to the backend and display the results.
         function filterText() {
-            document.getElementById("answer-box").innerHTML = ""
-            console.log(document.getElementById("filter-text-val").value)
-            fetch("/episodes?" + new URLSearchParams({ title: document.getElementById("filter-text-val").value }).toString())
-                .then((response) => response.json())
-                .then((data) => data.forEach(row => {
+            // Clear previous results.
+            document.getElementById("answer-box").innerHTML = "";
+            const queryValue = document.getElementById("filter-text-val").value;
+            console.log("Query:", queryValue);
 
-                    let tempDiv = document.createElement("div")
-                    tempDiv.innerHTML = answerBoxTemplate(row.title, row.descr, row.imdb_rating)
-                    document.getElementById("answer-box").appendChild(tempDiv)
-                }));
-
+            // Send the query to the backend endpoint /query?query=...
+            fetch("/query?" + new URLSearchParams({ query: queryValue }).toString())
+                .then(response => response.json())
+                .then(data => {
+                    // Limit results to 10 entries.
+                    data.slice(0, 10).forEach(stock => {
+                        let resultHTML = answerBoxTemplate(
+                            stock.name,
+                            stock.symbol,
+                            stock.score,
+                            stock.sector,
+                            stock.environmentScore,
+                            stock.socialScore,
+                            stock.governanceScore,
+                            stock.totalEsg,
+                            stock.overallRisk
+                        );
+                        let tempDiv = document.createElement("div");
+                        tempDiv.innerHTML = resultHTML;
+                        document.getElementById("answer-box").appendChild(tempDiv);
+                    });
+                })
+                .catch(error => console.error('Error fetching query results:', error));
         }
-
     </script>
 </body>
