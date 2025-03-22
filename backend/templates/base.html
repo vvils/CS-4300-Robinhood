@@ -257,8 +257,9 @@
 
 
         function getScoreFill(score) {
-            return Math.min(100, Math.max(0, score)) + '%';
+            return Math.min(100, Math.max(0, score * 100)) + '%';
         }
+
 
         function answerBoxTemplate(name, symbol, score, sector, environmentScore, socialScore, governanceScore, totalEsg, overallRisk) {
             const riskClass = determineRiskClass(overallRisk);
