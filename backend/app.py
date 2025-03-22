@@ -4,7 +4,7 @@ from flask import Flask, render_template, request
 from flask_cors import CORS
 # from helpers.MySQLDatabaseHandler import MySQLDatabaseHandler
 import pandas as pd
-from backend.helpers.query_system import EthicalInvestmentQuerySystem, load_stock_data
+from helpers.query_system import EthicalInvestmentQuerySystem, load_stock_data
 
 # ROOT_PATH for linking with all your files. 
 # Feel free to use a config.py or settings.py with a global export variable
